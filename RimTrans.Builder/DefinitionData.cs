@@ -77,6 +77,9 @@ namespace RimTrans.Builder {
             this._data = new SortedDictionary<string, XDocument>();
             this._abstracts = new XElement("Abstracts");
 
+            if (!Directory.Exists(path))
+                return;
+            
             var validDefsDirectories = Directory
                 .GetDirectories(path, "*", SearchOption.AllDirectories)
                 .Where(x => x.EndsWith("Defs"));
