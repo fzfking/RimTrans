@@ -37,5 +37,19 @@ namespace RimTrans.Lite.Windows
         {
             vm.SelectedMod = (ModListBoxItem)modListBoxWorkshop.SelectedItem;
         }
+
+        private void searchBox_OnTextChanged(object sender, TextChangedEventArgs e)
+        {
+            var filterText = searchBox.Text;
+
+            if (string.IsNullOrEmpty(filterText))
+                foreach (ModListBoxItem item in modListBoxInternal.Items)
+                    item.Visibility = Visibility.Visible;
+            
+            foreach (ModListBoxItem item in modListBoxInternal.Items)
+                item.Visibility = item.ModName.Contains(filterText)
+                    ? Visibility.Visible
+                    : Visibility.Collapsed;
+        }
     }
 }
