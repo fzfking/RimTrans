@@ -77,74 +77,110 @@ namespace RimTrans.Builder {
             this._data = new SortedDictionary<string, XDocument>();
             this._abstracts = new XElement("Abstracts");
 
-            DirectoryInfo dirInfo = new DirectoryInfo(path);
-            if (dirInfo.Exists) {
-                Log.Info();
-                Log.Write("Loading Defs: ");
-                Log.WriteLine(ConsoleColor.Cyan, path);
-                int countValidFiles = 0;
-                int countInvalidFiles = 0;
-                int splitIndex = dirInfo.FullName.Length + 1;
-                foreach (FileInfo fileInfo in dirInfo.GetFiles("*.xml", SearchOption.AllDirectories)) {
-                    XDocument doc = null;
-                    string filePath = fileInfo.FullName;
-                    try {
-                        doc = XDocument.Load(filePath, LoadOptions.SetBaseUri);
-                        countValidFiles++;
-                    } catch (XmlException ex) {
-                        Log.Error();
-                        Log.Write("Loading file failed: ");
-                        Log.WriteLine(ConsoleColor.Red, filePath);
-                        Log.Indent();
-                        Log.WriteLine(ex.Message);
-                        countInvalidFiles++;
-                    }
-                    if (doc != null) {
-                        foreach (XElement def in doc.Root.Elements()) {
-                            foreach (string defTypeName in DefTypeNameOf.AllNames) {
-                                if (string.Compare(def.Name.ToString(), defTypeName, true) == 0 && def.Name.ToString() != defTypeName) {
-                                    def.Name = defTypeName;
+            var validDefsDirectories = Directory
+                .GetDirectories(path, "*", SearchOption.AllDirectories)
+                .Where(x => x.EndsWith("Defs"));
+            foreach (var validDefsDirectory in validDefsDirectories)
+            {
+                DirectoryInfo dirInfo = new DirectoryInfo(validDefsDirectory);
+                if (dirInfo.Exists)
+                {
+                    Log.Info();
+                    Log.Write("Loading Defs: ");
+                    Log.WriteLine(ConsoleColor.Cyan, path);
+                    int countValidFiles = 0;
+                    int countInvalidFiles = 0;
+                    int splitIndex = dirInfo.FullName.Length + 1;
+                    foreach (FileInfo fileInfo in dirInfo.GetFiles("*.xml", SearchOption.AllDirectories))
+                    {
+                        XDocument doc = null;
+                        string filePath = fileInfo.FullName;
+                        try
+                        {
+                            Log.Write($"Found file: {fileInfo.FullName}");
+                            doc = XDocument.Load(filePath, LoadOptions.SetBaseUri);
+                            countValidFiles++;
+                        }
+                        catch (XmlException ex)
+                        {
+                            Log.Error();
+                            Log.Write("Loading file failed: ");
+                            Log.WriteLine(ConsoleColor.Red, filePath);
+                            Log.Indent();
+                            Log.WriteLine(ex.Message);
+                            countInvalidFiles++;
+                        }
+
+                        if (doc != null)
+                        {
+                            foreach (XElement def in doc.Root.Elements())
+                            {
+                                foreach (string defTypeName in DefTypeNameOf.AllNames)
+                                {
+                                    if (string.Compare(def.Name.ToString(), defTypeName, true) == 0 &&
+                                        def.Name.ToString() != defTypeName)
+                                    {
+                                        def.Name = defTypeName;
+                                    }
+                                }
+                            }
+
+                            this._data.Add(filePath.Substring(splitIndex), doc);
+                            foreach (XElement abstr in from ele in doc.Root.Elements()
+                                     where ele.Attribute("Name") != null
+                                     select ele)
+                            {
+                                XElement abstrGroup = this._abstracts.Element(abstr.Name);
+                                if (abstrGroup == null)
+                                {
+                                    abstrGroup = new XElement(abstr.Name);
+                                    abstrGroup.Add(abstr);
+                                    ((XElement)abstrGroup.LastNode).SetAttributeValue("Uri", abstr.BaseUri);
+                                    this._abstracts.Add(abstrGroup);
+                                }
+                                else
+                                {
+                                    abstrGroup.Add(abstr);
+                                    ((XElement)abstrGroup.LastNode).SetAttributeValue("Uri", abstr.BaseUri);
                                 }
                             }
                         }
-                        this._data.Add(filePath.Substring(splitIndex), doc);
-                        foreach (XElement abstr in from ele in doc.Root.Elements()
-                                                   where ele.Attribute("Name") != null
-                                                   select ele) {
-                            XElement abstrGroup = this._abstracts.Element(abstr.Name);
-                            if (abstrGroup == null) {
-                                abstrGroup = new XElement(abstr.Name);
-                                abstrGroup.Add(abstr);
-                                ((XElement)abstrGroup.LastNode).SetAttributeValue("Uri", abstr.BaseUri);
-                                this._abstracts.Add(abstrGroup);
-                            } else {
-                                abstrGroup.Add(abstr);
-                                ((XElement)abstrGroup.LastNode).SetAttributeValue("Uri", abstr.BaseUri);
-                            }
+                    }
+
+                    if (countValidFiles > 0)
+                    {
+                        if (countInvalidFiles == 0)
+                        {
+                            Log.Info();
+                            Log.WriteLine("Completed Loading Defs: {0} file(s).", countValidFiles);
+                        }
+                        else
+                        {
+                            Log.Warning();
+                            Log.WriteLine("Completed Loading Defs: Success: {0} file(s), Failure: {1} file(s).",
+                                countValidFiles, countInvalidFiles);
+                        }
+                    }
+                    else
+                    {
+                        if (countInvalidFiles == 0)
+                        {
+                            Log.Info();
+                            Log.WriteLine("Directory \"Defs\" is empty.");
+                        }
+                        else
+                        {
+                            Log.Error();
+                            Log.WriteLine("Loading failed: {1} file(s).", countInvalidFiles);
                         }
                     }
                 }
-                if (countValidFiles > 0) {
-                    if (countInvalidFiles == 0) {
-                        Log.Info();
-                        Log.WriteLine("Completed Loading Defs: {0} file(s).", countValidFiles);
-                    } else {
-                        Log.Warning();
-                        Log.WriteLine("Completed Loading Defs: Success: {0} file(s), Failure: {1} file(s).", countValidFiles, countInvalidFiles);
-                    }
-                } else {
-                    if (countInvalidFiles == 0) {
-                        Log.Info();
-                        Log.WriteLine("Directory \"Defs\" is empty.");
-                    } else {
-                        Log.Error();
-                        Log.WriteLine("Loading failed: {1} file(s).", countInvalidFiles);
-                    }
+                else
+                {
+                    Log.Info();
+                    Log.Write("Directory \"Defs\" does not exist: ");
+                    Log.WriteLine(ConsoleColor.Cyan, path);
                 }
-            } else {
-                Log.Info();
-                Log.Write("Directory \"Defs\" does not exist: ");
-                Log.WriteLine(ConsoleColor.Cyan, path);
             }
         }
 

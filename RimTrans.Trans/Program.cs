@@ -243,7 +243,7 @@ namespace RimTrans.Trans
                 {
                     foreach(string versionFolder in versionFolders)
                     {
-                        string versionDefsPath = Path.Combine(modPath, versionFolder, "Defs");
+                        string versionDefsPath = Path.Combine(modPath, versionFolder);
                         Defs = DefinitionData.Load(versionDefsPath);
                         if (Defs.Data.Count == 0)
                             continue;
