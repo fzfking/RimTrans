@@ -241,6 +241,9 @@ namespace RimTrans.Trans
                 List<string> versionFolders = GetVersionFolders(modPath);
                 if(versionFolders.Count>0)
                 {
+                    string defsPath = Path.Combine(modPath, "Defs");
+                    Console.WriteLine(defsPath);
+                    Defs = DefinitionData.Load(defsPath);
                     foreach(string versionFolder in versionFolders)
                     {
                         string versionDefsPath = Path.Combine(modPath, versionFolder);
