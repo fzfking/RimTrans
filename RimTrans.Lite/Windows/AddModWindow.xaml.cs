@@ -12,6 +12,7 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using RimTrans.Lite.Controls;
+using Path = System.IO.Path;
 
 namespace RimTrans.Lite.Windows
 {
@@ -40,16 +41,21 @@ namespace RimTrans.Lite.Windows
 
         private void searchBox_OnTextChanged(object sender, TextChangedEventArgs e)
         {
-            var filterText = searchBox.Text;
+            var filterText = searchBox.Text.ToLower();
 
             if (string.IsNullOrEmpty(filterText))
                 foreach (ModListBoxItem item in modListBoxInternal.Items)
                     item.Visibility = Visibility.Visible;
-            
+
             foreach (ModListBoxItem item in modListBoxInternal.Items)
-                item.Visibility = item.ModName.Contains(filterText)
+            {
+                var modNameContainsFilteredText = item.ModName.ToLower().Contains(filterText);
+                var modFolderName = Path.GetFileName(item.ModPath)?.ToLower();
+                var modFolderContainsFilteredText = modFolderName?.Contains(filterText) ?? false;
+                item.Visibility = modNameContainsFilteredText || modFolderContainsFilteredText
                     ? Visibility.Visible
                     : Visibility.Collapsed;
+            }
         }
     }
 }
